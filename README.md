@@ -137,7 +137,7 @@ After saving, reload your dashboard.
 ---
 
 ## Support
-For issues, questions, or feature requests, please visit the [GitHub Repository](https://github.com/mantiz010/mqtt-monitor).
+For issues, questions, or feature requests, please visit the [GitHub Repository]((https://github.com/mantiz010/MQTT_Monitor)
 
 ---
 
