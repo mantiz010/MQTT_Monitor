@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MQTT Monitor</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f4f4f4;
+    }
+    #header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 20px;
+      margin: 0;
+      font-size: 24px;
+      flex-wrap: wrap;
+      background-color: #41BDF5; /* Home Assistant blue */
+      color: white;
+      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
+    }
+    #header h1 {
+      margin: 0;
+      font-size: 50px; /* Larger title size */
+      font-weight: bold;
+      letter-spacing: 1.5px;
+      flex-grow: 1;
+    }
+    #header img {
+      height: 150px;
+      margin: auto; /* Center the logo */
+    }
+    #controls {
+      margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    #topic-filter, #search-bar {
+      padding: 5px;
+      font-size: 16px;
+      margin-left: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+      table-layout: fixed;
+      background-color: white;
+      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    }
+    th, td {
+      padding: 12px;
+      border: 1px solid #ddd;
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    th {
+      background-color: #41BDF5; /* Home Assistant blue for headers */
+      color: white;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    tr:hover {
+      background-color: #f1f1f1;
+    }
+    .error-message {
+      color: red;
+    }
+
+    /* Set column widths */
+    th:nth-child(1), td:nth-child(1) {
+      width: 30%; /* Topic column */
+    }
+    th:nth-child(2), td:nth-child(2) {
+      width: 55%; /* Payload column */
+    }
+    th:nth-child(3), td:nth-child(3) {
+      width: 15%; /* Timestamp column */
+    }
+
+    @media screen and (max-width: 768px) {
+      #header {
+        flex-direction: column;
+        align-items: center;
+      }
+      #header h1 {
+        font-size: 40px; /* Slightly smaller for mobile */
+        margin-bottom: 10px;
+      }
+      #header img {
+        height: 120px;
+      }
+      #controls {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <h1>MQTT Monitor</h1>
+    <img src="/local/mqtt_monitor.png?v=3" alt="MQTT Monitor Logo">
+  </div>
+  <div id="controls">
+    <label for="topic-filter"><strong>Filter by Topic:</strong></label>
+    <select id="topic-filter" onchange="filterMessages()">
+      <option value="all">All Topics</option>
+    </select>
+    <input type="text" id="search-bar" placeholder="Search Topics..." oninput="searchTopics()">
+  </div>
+  <div id="error-container"></div>
+  <table id="messages-table">
+    <thead>
+      <tr>
+        <th>Topic</th>
+        <th>Payload</th>
+        <th>Timestamp</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <script>
+    const topicData = {};
+    let selectedTopic = 'all';
+    let searchMode = false;
+
+    function loadStoredData() {
+      const storedData = localStorage.getItem('mqtt_monitor_data');
+      if (storedData) {
+        const parsedData = JSON.parse(storedData);
+        Object.keys(parsedData).forEach(topic => {
+          topicData[topic] = parsedData[topic];
+        });
+      }
+    }
+
+    function saveDataToStorage() {
+      localStorage.setItem('mqtt_monitor_data', JSON.stringify(topicData));
+    }
+
+    async function fetchData() {
+      try {
+        const response = await fetch('/api/mqtt_monitor/data');
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+        const data = await response.json();
+        if (!searchMode) {
+          updateTopicFilter(data.messages);
+          const tableBody = document.querySelector('#messages-table tbody');
+          data.messages
+            .filter(msg => !msg.topic.startsWith('$SYS'))
+            .forEach(msg => processMessage(msg, tableBody));
+        }
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        const errorContainer = document.getElementById('error-container');
+        errorContainer.innerHTML = `<p class="error-message">Error fetching data. Please check the console for details.</p>`;
+      }
+    }
+
+    function processMessage(msg, tableBody) {
+      const topic = msg.topic;
+      if (!topicData[topic]) {
+        topicData[topic] = [];
+      }
+      const isDuplicate = topicData[topic].some(entry => entry.payload === msg.payload && entry.timestamp === msg.timestamp);
+      if (!isDuplicate) {
+        topicData[topic].push(msg);
+        if (topicData[topic].length > 100) {
+          topicData[topic].shift();
+        }
+        saveDataToStorage();
+        if (selectedTopic === 'all' || selectedTopic === topic) {
+          addMessageToTable(msg, tableBody);
+        }
+      }
+    }
+
+    function addMessageToTable(msg, tableBody) {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${sanitize(msg.topic)}</td>
+        <td>${sanitize(msg.payload)}</td>
+        <td>${sanitize(formatTimestamp(msg.timestamp))}</td>
+      `;
+      tableBody.prepend(row);
+    }
+
+    function sanitize(str) {
+      if (typeof str !== 'string') {
+        return str;
+      }
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+
+    function formatTimestamp(timestamp) {
+      return new Date(timestamp).toLocaleTimeString();
+    }
+
+    function updateTopicFilter(messages) {
+      const filter = document.getElementById('topic-filter');
+      const uniqueTopics = Array.from(new Set(messages.map(msg => msg.topic)));
+      const currentOptions = Array.from(filter.options).map(option => option.value);
+      uniqueTopics.forEach(topic => {
+        if (!topic.startsWith('$SYS') && !currentOptions.includes(topic)) {
+          const option = document.createElement('option');
+          option.value = topic;
+          option.textContent = topic;
+          filter.appendChild(option);
+        }
+      });
+    }
+
+    function filterMessages() {
+      selectedTopic = document.getElementById('topic-filter').value;
+      const tableBody = document.querySelector('#messages-table tbody');
+      tableBody.innerHTML = '';
+      if (selectedTopic === 'all') {
+        Object.values(topicData).forEach(messages => {
+          messages.forEach(msg => addMessageToTable(msg, tableBody));
+        });
+      } else {
+        (topicData[selectedTopic] || []).forEach(msg => addMessageToTable(msg, tableBody));
+      }
+    }
+
+    function searchTopics() {
+      const query = document.getElementById('search-bar').value.toLowerCase();
+      const tableBody = document.querySelector('#messages-table tbody');
+      tableBody.innerHTML = '';
+      if (query === '') {
+        searchMode = false;
+        filterMessages();
+      } else {
+        searchMode = true;
+        Object.keys(topicData).forEach(topic => {
+          if (topic.toLowerCase().includes(query)) {
+            topicData[topic].forEach(msg => addMessageToTable(msg, tableBody));
+          }
+        });
+      }
+    }
+
+    function initialize() {
+      loadStoredData();
+      filterMessages();
+      fetchData();
+      setInterval(fetchData, 2000);
+    }
+
+    initialize();
+  </script>
+</body>
+</html>

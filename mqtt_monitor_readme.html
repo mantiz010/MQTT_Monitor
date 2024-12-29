@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta
+    name="description"
+    content="Documentation for MQTT Monitor - A custom Home Assistant integration."
+  />
+  <title>MQTT Monitor Documentation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    header {
+      background: #007bff;
+      color: white;
+      padding: 1rem 0;
+      text-align: center;
+    }
+    .container {
+      width: 90%;
+      max-width: 1000px;
+      margin: auto;
+      overflow: hidden;
+      padding: 1rem;
+    }
+    h1, h2, h3 {
+      color: #007bff;
+    }
+    code {
+      background: #f4f4f4;
+      border: 1px solid #ddd;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+    pre {
+      background: #f4f4f4;
+      border: 1px solid #ddd;
+      padding: 1rem;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+    a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    footer {
+      background: #333;
+      color: white;
+      text-align: center;
+      padding: 1rem 0;
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>MQTT Monitor Documentation</h1>
+</header>
+
+<div class="container">
+  <section id="overview">
+    <h2>Overview</h2>
+    <p>
+      <strong>MQTT Monitor</strong> is a custom Home Assistant integration that provides
+      real-time monitoring of MQTT topics and messages. It allows you to filter, view,
+      and analyze MQTT data directly within Home Assistant.
+    </p>
+  </section>
+
+  <section id="features">
+    <h2>Features</h2>
+    <ul>
+      <li>Real-time MQTT message monitoring.</li>
+      <li>Customizable topic filtering.</li>
+      <li>Supports logging and historical message storage.</li>
+      <li>Display messages with a clean and responsive UI.</li>
+      <li>Easily integrated with Home Assistant dashboards.</li>
+    </ul>
+  </section>
+
+  <section id="installation">
+    <h2>Installation</h2>
+
+    <h3>Manual Installation</h3>
+    <ol>
+      <li>
+        Download the <code>mqtt_monitor</code> custom integration and associated files from the 
+        <a href="#">repository</a>.
+      </li>
+      <li>
+        Navigate to your Home Assistant configuration directory:
+        <pre>/config/</pre>
+      </li>
+      <li>
+        Create or locate the <code>custom_components</code> directory:
+        <pre>mkdir /config/custom_components</pre>
+      </li>
+      <li>
+        Place the <code>mqtt_monitor</code> folder into the 
+        <code>custom_components</code> directory.
+      </li>
+      <li>
+        Additionally, copy the following files to your <code>/config/www</code> directory:
+        <ul>
+          <li><code>mqtt_monitor.html</code></li>
+          <li><code>mqtt_monitor.png</code></li>
+        </ul>
+      </li>
+      <li>Restart Home Assistant.</li>
+    </ol>
+
+    <h3>Directory Structure</h3>
+    <pre>
+/config
+├── custom_components
+│   └── mqtt_monitor
+│       ├── __init__.py
+│       ├── manifest.json
+│       └── sensor.py
+├── www
+│   ├── mqtt_monitor.html
+│   └── mqtt_monitor.png
+├── configuration.yaml
+    </pre>
+  </section>
+
+  <section id="dashboard">
+    <h2>Adding an MQTT Monitor Dashboard</h2>
+    <p>
+      You can embed <code>mqtt_monitor.html</code> directly into your Home Assistant 
+      Lovelace dashboard using an <strong>iframe card</strong>. This enables you to 
+      view real-time MQTT data without leaving Home Assistant.
+    </p>
+
+    <h3>1. Confirm File Location</h3>
+    <p>
+      Ensure <code>mqtt_monitor.html</code> and <code>mqtt_monitor.png</code> are placed in your <code>/config/www</code> 
+      folder, making them accessible at <code>/local/mqtt_monitor.html</code> and <code>/local/mqtt_monitor.png</code>.
+    </p>
+
+    <h3>2. Add an iframe Card</h3>
+    <p>
+      To display the file, add an iframe card referencing 
+      <code>/local/mqtt_monitor.html</code> (with an optional version parameter 
+      <code>?v=57</code> for cache-busting). Here are two methods:
+    </p>
+
+    <h4>Option A: Using the UI Editor</h4>
+    <ol>
+      <li>In Home Assistant, go to <strong>Settings</strong> &gt; <strong>Dashboards</strong>.</li>
+      <li>Click <strong>Add Card</strong>, search for <strong>Manual</strong>.</li>
+      <li>Paste the following YAML into the card editor:</li>
+    </ol>
+    <pre>
+type: iframe
+url: /local/mqtt_monitor.html?v=57
+title: MQTT Monitor
+    </pre>
+    <p>Click <strong>Save</strong> to add the card.</p>
+  </section>
+
+  <section id="support">
+    <h2>Support</h2>
+    <p>
+      For issues or questions, visit the 
+      <a href="#">MQTT Monitor GitHub Repository</a>.
+    </p>
+  </section>
+</div>
+
+<footer>
+  <p>&copy; 2024 MQTT Monitor Integration</p>
+</footer>
+
+</body>
+</html>
