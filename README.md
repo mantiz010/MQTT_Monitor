@@ -124,7 +124,7 @@ After saving, reload your dashboard.
 ## Screenshots
 
 ### Dashboard Example
-![MQTT Monitor UI](mqtt_monitor.png)
+![MQTT Monitor UI](mqtt_monitor_screen.png)
 
 ---
 
