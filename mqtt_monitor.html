@@ -86,6 +86,23 @@
     th:nth-child(3), td:nth-child(3) {
       width: 15%; /* Timestamp column */
     }
+
+    @media screen and (max-width: 768px) {
+      #header {
+        flex-direction: column;
+        align-items: center;
+      }
+      #header h1 {
+        font-size: 40px; /* Slightly smaller for mobile */
+        margin-bottom: 10px;
+      }
+      #header img {
+        height: 120px;
+      }
+      #controls {
+        flex-direction: column;
+      }
+    }
   </style>
 </head>
 <body>
@@ -112,7 +129,7 @@
     <tbody></tbody>
   </table>
   <script>
-    const topicData = {}; // Store all topics and their messages
+    const topicData = {};
     let selectedTopic = 'all';
     let searchMode = false;
 
@@ -135,8 +152,8 @@
         const response = await fetch('/api/mqtt_monitor/data');
         if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
         const data = await response.json();
-        updateTopicFilter(data.messages);
         if (!searchMode) {
+          updateTopicFilter(data.messages);
           const tableBody = document.querySelector('#messages-table tbody');
           data.messages
             .filter(msg => !msg.topic.startsWith('$SYS'))
@@ -144,7 +161,8 @@
         }
       } catch (error) {
         console.error('Error fetching data:', error);
-        document.getElementById('error-container').innerHTML = `<p class="error-message">Error fetching data. Please check the console for details.</p>`;
+        const errorContainer = document.getElementById('error-container');
+        errorContainer.innerHTML = `<p class="error-message">Error fetching data. Please check the console for details.</p>`;
       }
     }
 
@@ -177,6 +195,9 @@
     }
 
     function sanitize(str) {
+      if (typeof str !== 'string') {
+        return str;
+      }
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
     }
 
@@ -186,12 +207,13 @@
 
     function updateTopicFilter(messages) {
       const filter = document.getElementById('topic-filter');
-      messages.forEach(msg => {
-        if (!topicData[msg.topic]) topicData[msg.topic] = []; // Ensure topic exists
-        if (!Array.from(filter.options).some(option => option.value === msg.topic)) {
+      const uniqueTopics = Array.from(new Set(messages.map(msg => msg.topic)));
+      const currentOptions = Array.from(filter.options).map(option => option.value);
+      uniqueTopics.forEach(topic => {
+        if (!topic.startsWith('$SYS') && !currentOptions.includes(topic)) {
           const option = document.createElement('option');
-          option.value = msg.topic;
-          option.textContent = msg.topic;
+          option.value = topic;
+          option.textContent = topic;
           filter.appendChild(option);
         }
       });
@@ -202,7 +224,9 @@
       const tableBody = document.querySelector('#messages-table tbody');
       tableBody.innerHTML = '';
       if (selectedTopic === 'all') {
-        Object.values(topicData).forEach(messages => messages.forEach(msg => addMessageToTable(msg, tableBody)));
+        Object.values(topicData).forEach(messages => {
+          messages.forEach(msg => addMessageToTable(msg, tableBody));
+        });
       } else {
         (topicData[selectedTopic] || []).forEach(msg => addMessageToTable(msg, tableBody));
       }
@@ -217,9 +241,11 @@
         filterMessages();
       } else {
         searchMode = true;
-        Object.keys(topicData)
-          .filter(topic => topic.toLowerCase().includes(query))
-          .forEach(topic => topicData[topic].forEach(msg => addMessageToTable(msg, tableBody)));
+        Object.keys(topicData).forEach(topic => {
+          if (topic.toLowerCase().includes(query)) {
+            topicData[topic].forEach(msg => addMessageToTable(msg, tableBody));
+          }
+        });
       }
     }
 
