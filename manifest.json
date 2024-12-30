@@ -2,9 +2,9 @@
   "domain": "mqtt_monitor",
   "name": "MQTT Monitor",
   "version": "1.0.0",
-  "documentation": "https://your-documentation-url.com",
+  "documentation": "https://github.com/mantiz010/MQTT_Monitor",
   "requirements": ["paho-mqtt==1.6.1"],
   "dependencies": [],
-  "codeowners": [],
+  "codeowners": ["@mantiz010"],
   "iot_class": "local_push"
 }
