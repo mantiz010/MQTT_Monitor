@@ -1,236 +1,188 @@
-<!DOCTYPE html>
-<html>
+<<!DOCTYPE html>
+<html lang="en">
 <head>
-  <title>MQTT Monitor</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta
+    name="description"
+    content="Documentation for MQTT Monitor - A custom Home Assistant integration."
+  />
+  <title>MQTT Monitor Documentation</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #f4f4f4;
-    }
-    #header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px 20px;
+      line-height: 1.6;
       margin: 0;
-      font-size: 24px;
-      flex-wrap: wrap;
-      background-color: #41BDF5; /* Home Assistant blue */
-      color: white;
-      text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
-    }
-    #header h1 {
-      margin: 0;
-      font-size: 50px; /* Larger title size */
-      font-weight: bold;
-      letter-spacing: 1.5px;
-      flex-grow: 1;
-    }
-    #header img {
-      height: 150px;
-      margin: auto; /* Center the logo */
-    }
-    #controls {
-      margin-top: 20px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-    #topic-filter, #search-bar {
-      padding: 5px;
-      font-size: 16px;
-      margin-left: 10px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 30px;
-      table-layout: fixed;
-      background-color: white;
-      box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
-    }
-    th, td {
-      padding: 12px;
-      border: 1px solid #ddd;
-      text-align: left;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-    th {
-      background-color: #41BDF5; /* Home Assistant blue for headers */
-      color: white;
-      font-weight: bold;
-      text-transform: uppercase;
-    }
-    tr:nth-child(even) {
+      padding: 0;
       background-color: #f9f9f9;
+      color: #333;
     }
-    tr:hover {
-      background-color: #f1f1f1;
+    header {
+      background: #007bff;
+      color: white;
+      padding: 1rem 0;
+      text-align: center;
     }
-    .error-message {
-      color: red;
+    .container {
+      width: 90%;
+      max-width: 1000px;
+      margin: auto;
+      overflow: hidden;
+      padding: 1rem;
     }
-
-    /* Set column widths */
-    th:nth-child(1), td:nth-child(1) {
-      width: 30%; /* Topic column */
+    h1, h2, h3 {
+      color: #007bff;
     }
-    th:nth-child(2), td:nth-child(2) {
-      width: 55%; /* Payload column */
+    code {
+      background: #f4f4f4;
+      border: 1px solid #ddd;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-family: monospace;
     }
-    th:nth-child(3), td:nth-child(3) {
-      width: 15%; /* Timestamp column */
+    pre {
+      background: #f4f4f4;
+      border: 1px solid #ddd;
+      padding: 1rem;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+    a {
+      color: #007bff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    footer {
+      background: #333;
+      color: white;
+      text-align: center;
+      padding: 1rem 0;
+      margin-top: 2rem;
     }
   </style>
 </head>
 <body>
-  <div id="header">
-    <h1>MQTT Monitor</h1>
-    <img src="/local/mqtt_monitor.png?v=3" alt="MQTT Monitor Logo">
-  </div>
-  <div id="controls">
-    <label for="topic-filter"><strong>Filter by Topic:</strong></label>
-    <select id="topic-filter" onchange="filterMessages()">
-      <option value="all">All Topics</option>
-    </select>
-    <input type="text" id="search-bar" placeholder="Search Topics..." oninput="searchTopics()">
-  </div>
-  <div id="error-container"></div>
-  <table id="messages-table">
-    <thead>
-      <tr>
-        <th>Topic</th>
-        <th>Payload</th>
-        <th>Timestamp</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-  <script>
-    const topicData = {}; // Store all topics and their messages
-    let selectedTopic = 'all';
-    let searchMode = false;
 
-    function loadStoredData() {
-      const storedData = localStorage.getItem('mqtt_monitor_data');
-      if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        Object.keys(parsedData).forEach(topic => {
-          topicData[topic] = parsedData[topic];
-        });
-      }
-    }
+<header>
+  <h1>MQTT Monitor Documentation</h1>
+</header>
 
-    function saveDataToStorage() {
-      localStorage.setItem('mqtt_monitor_data', JSON.stringify(topicData));
-    }
+<div class="container">
+  <section id="overview">
+    <h2>Overview</h2>
+    <p>
+      <strong>MQTT Monitor</strong> is a custom Home Assistant integration that provides
+      real-time monitoring of MQTT topics and messages. It allows you to filter, view,
+      and analyze MQTT data directly within Home Assistant.
+    </p>
+  </section>
 
-    async function fetchData() {
-      try {
-        const response = await fetch('/api/mqtt_monitor/data');
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-        const data = await response.json();
-        updateTopicFilter(data.messages);
-        if (!searchMode) {
-          const tableBody = document.querySelector('#messages-table tbody');
-          data.messages
-            .filter(msg => !msg.topic.startsWith('$SYS'))
-            .forEach(msg => processMessage(msg, tableBody));
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error);
-        document.getElementById('error-container').innerHTML = `<p class="error-message">Error fetching data. Please check the console for details.</p>`;
-      }
-    }
+  <section id="features">
+    <h2>Features</h2>
+    <ul>
+      <li>Real-time MQTT message monitoring.</li>
+      <li>Customizable topic filtering.</li>
+      <li>Supports logging and historical message storage.</li>
+      <li>Display messages with a clean and responsive UI.</li>
+      <li>Easily integrated with Home Assistant dashboards.</li>
+    </ul>
+  </section>
 
-    function processMessage(msg, tableBody) {
-      const topic = msg.topic;
-      if (!topicData[topic]) {
-        topicData[topic] = [];
-      }
-      const isDuplicate = topicData[topic].some(entry => entry.payload === msg.payload && entry.timestamp === msg.timestamp);
-      if (!isDuplicate) {
-        topicData[topic].push(msg);
-        if (topicData[topic].length > 100) {
-          topicData[topic].shift();
-        }
-        saveDataToStorage();
-        if (selectedTopic === 'all' || selectedTopic === topic) {
-          addMessageToTable(msg, tableBody);
-        }
-      }
-    }
+  <section id="installation">
+    <h2>Installation</h2>
 
-    function addMessageToTable(msg, tableBody) {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${sanitize(msg.topic)}</td>
-        <td>${sanitize(msg.payload)}</td>
-        <td>${sanitize(formatTimestamp(msg.timestamp))}</td>
-      `;
-      tableBody.prepend(row);
-    }
+    <h3>Manual Installation</h3>
+    <ol>
+      <li>
+        Download the <code>mqtt_monitor</code> custom integration and associated files from the 
+        <a href="#">repository</a>.
+      </li>
+      <li>
+        Navigate to your Home Assistant configuration directory:
+        <pre>/config/</pre>
+      </li>
+      <li>
+        Create or locate the <code>custom_components</code> directory:
+        <pre>mkdir /config/custom_components</pre>
+      </li>
+      <li>
+        Place the <code>mqtt_monitor</code> folder into the 
+        <code>custom_components</code> directory.
+      </li>
+      <li>
+        Additionally, copy the following files to your <code>/config/www</code> directory:
+        <ul>
+          <li><code>mqtt_monitor.html</code></li>
+          <li><code>mqtt_monitor.png</code></li>
+        </ul>
+      </li>
+      <li>Restart Home Assistant.</li>
+    </ol>
 
-    function sanitize(str) {
-      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-    }
+    <h3>Directory Structure</h3>
+    <pre>
+/config
+├── custom_components
+│   └── mqtt_monitor
+│       ├── __init__.py
+│       ├── manifest.json
+│       └── sensor.py
+├── www
+│   ├── mqtt_monitor.html
+│   └── mqtt_monitor.png
+├── configuration.yaml
+    </pre>
+  </section>
 
-    function formatTimestamp(timestamp) {
-      return new Date(timestamp).toLocaleTimeString();
-    }
+  <section id="dashboard">
+    <h2>Adding an MQTT Monitor Dashboard</h2>
+    <p>
+      You can embed <code>mqtt_monitor.html</code> directly into your Home Assistant 
+      Lovelace dashboard using an <strong>iframe card</strong>. This enables you to 
+      view real-time MQTT data without leaving Home Assistant.
+    </p>
 
-    function updateTopicFilter(messages) {
-      const filter = document.getElementById('topic-filter');
-      messages.forEach(msg => {
-        if (!topicData[msg.topic]) topicData[msg.topic] = []; // Ensure topic exists
-        if (!Array.from(filter.options).some(option => option.value === msg.topic)) {
-          const option = document.createElement('option');
-          option.value = msg.topic;
-          option.textContent = msg.topic;
-          filter.appendChild(option);
-        }
-      });
-    }
+    <h3>1. Confirm File Location</h3>
+    <p>
+      Ensure <code>mqtt_monitor.html</code> and <code>mqtt_monitor.png</code> are placed in your <code>/config/www</code> 
+      folder, making them accessible at <code>/local/mqtt_monitor.html</code> and <code>/local/mqtt_monitor.png</code>.
+    </p>
 
-    function filterMessages() {
-      selectedTopic = document.getElementById('topic-filter').value;
-      const tableBody = document.querySelector('#messages-table tbody');
-      tableBody.innerHTML = '';
-      if (selectedTopic === 'all') {
-        Object.values(topicData).forEach(messages => messages.forEach(msg => addMessageToTable(msg, tableBody)));
-      } else {
-        (topicData[selectedTopic] || []).forEach(msg => addMessageToTable(msg, tableBody));
-      }
-    }
+    <h3>2. Add an iframe Card</h3>
+    <p>
+      To display the file, add an iframe card referencing 
+      <code>/local/mqtt_monitor.html</code> (with an optional version parameter 
+      <code>?v=57</code> for cache-busting). Here are two methods:
+    </p>
 
-    function searchTopics() {
-      const query = document.getElementById('search-bar').value.toLowerCase();
-      const tableBody = document.querySelector('#messages-table tbody');
-      tableBody.innerHTML = '';
-      if (query === '') {
-        searchMode = false;
-        filterMessages();
-      } else {
-        searchMode = true;
-        Object.keys(topicData)
-          .filter(topic => topic.toLowerCase().includes(query))
-          .forEach(topic => topicData[topic].forEach(msg => addMessageToTable(msg, tableBody)));
-      }
-    }
+    <h4>Option A: Using the UI Editor</h4>
+    <ol>
+      <li>In Home Assistant, go to <strong>Settings</strong> &gt; <strong>Dashboards</strong>.</li>
+      <li>Click <strong>Add Card</strong>, search for <strong>Manual</strong>.</li>
+      <li>Paste the following YAML into the card editor:</li>
+    </ol>
+    <pre>
+type: iframe
+url: /local/mqtt_monitor.html?v=57
+title: MQTT Monitor
+    </pre>
+    <p>Click <strong>Save</strong> to add the card.</p>
+  </section>
 
-    function initialize() {
-      loadStoredData();
-      filterMessages();
-      fetchData();
-      setInterval(fetchData, 2000);
-    }
+  <section id="support">
+    <h2>Support</h2>
+    <p>
+      For issues or questions, visit the 
+      <a href="#">MQTT Monitor GitHub Repository</a>.
+    </p>
+  </section>
+</div>
 
-    initialize();
-  </script>
+<footer>
+  <p>&copy; 2024 MQTT Monitor Integration</p>
+</footer>
+
 </body>
 </html>
