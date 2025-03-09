@@ -1,7 +1,7 @@
 {
   "domain": "mqtt_monitor",
   "name": "MQTT Monitor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "documentation": "https://github.com/mantiz010/MQTT_Monitor",
   "requirements": ["paho-mqtt"],
   "dependencies": [],
